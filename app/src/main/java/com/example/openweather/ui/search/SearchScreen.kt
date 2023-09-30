@@ -31,7 +31,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.openweather.R
 import com.example.openweather.network.model.OpenWeatherResponse
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -54,21 +55,18 @@ fun SearchScreen(
         LocationServices.getFusedLocationProviderClient(context)
     }
     val uiState = viewModel.uiState
-    val locationPermissionsState = rememberMultiplePermissionsState(
-        listOf(
-            android.Manifest.permission.ACCESS_COARSE_LOCATION,
-            android.Manifest.permission.ACCESS_FINE_LOCATION,
-        )
+    val locationPermissionsState = rememberPermissionState(
+        android.Manifest.permission.ACCESS_FINE_LOCATION,
     )
 
     uiState.apiResponse?.let {
-        viewModel.resetState()
         onNavigateToResults(it)
+        viewModel.resetState()
     }
 
     if (uiState.navigateToNoResultsScreen) {
-        viewModel.resetState()
         onNavigateToNoResults()
+        viewModel.resetState()
     }
 
     Column(
@@ -104,6 +102,12 @@ fun SearchScreen(
             singleLine = true
         )
         Spacer(modifier = Modifier.height(8.dp))
+
+        if (uiState.hasSearchError) {
+            Text(text = stringResource(R.string.an_error_occurred_try_again))
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         if (uiState.isSearchInProgress) {
             CircularProgressIndicator(
                 modifier = Modifier.width(64.dp),
@@ -111,15 +115,18 @@ fun SearchScreen(
             )
         } else {
             Column {
-                Button(onClick = { viewModel.onSearchUIEvent(SearchUIEvent.OnSearchClick) }) {
+                Button(onClick = {
+                    viewModel.onSearchUIEvent(SearchUIEvent.OnSearchClick)
+                }) {
                     Icon(
                         Icons.Default.Search,
                         contentDescription = stringResource(R.string.search_button)
                     )
                 }
                 Button(onClick = {
-                    if (locationPermissionsState.allPermissionsGranted) {
+                    if (locationPermissionsState.status.isGranted) {
                         scope.launch(Dispatchers.IO) {
+                            viewModel.onSearchUIEvent(SearchUIEvent.ShowProgressIndicator(true))
                             locationClient.getCurrentLocation(
                                 Priority.PRIORITY_HIGH_ACCURACY,
                                 CancellationTokenSource().token,
@@ -134,12 +141,14 @@ fun SearchScreen(
                                             long
                                         )
                                     )
+                                } else {
+                                    viewModel.onSearchUIEvent(SearchUIEvent.ShowProgressIndicator(false))
                                 }
                             }
                         }
                     } else {
                         scope.launch(Dispatchers.IO) {
-                            locationPermissionsState.launchMultiplePermissionRequest()
+                            locationPermissionsState.launchPermissionRequest()
                         }
                     }
                 }) {

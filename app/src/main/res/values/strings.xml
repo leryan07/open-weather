@@ -16,4 +16,5 @@
     <string name="no_results_found">No results found</string>
     <string name="retry_search">Retry Search</string>
     <string name="no_results">noResults</string>
+    <string name="an_error_occurred_try_again">An error occurred, try again.</string>
 </resources>

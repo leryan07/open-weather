@@ -10,5 +10,6 @@ data class SearchUIState(
     var formError: UiText? = null,
     var apiResponse: OpenWeatherResponse? = null,
     var navigateToNoResultsScreen: Boolean = false,
-    var isSearchInProgress: Boolean = false
+    var isSearchInProgress: Boolean = false,
+    var hasSearchError: Boolean = false
 )

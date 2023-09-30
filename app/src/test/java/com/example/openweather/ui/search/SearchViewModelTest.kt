@@ -4,16 +4,12 @@ import com.example.openweather.network.FakeOpenWeatherApiService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.newSingleThreadContext
-import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -68,5 +64,11 @@ class SearchViewModelTest {
             viewModel.onSearchUIEvent(SearchUIEvent.OnLocationSearchClick(0.0, 0.0))
         }
         assertEquals("Indianapolis", viewModel.uiState.apiResponse?.name)
+    }
+
+    @Test
+    fun onSearchUIEvent_ShowProgressIndicator_true() {
+        viewModel.onSearchUIEvent(SearchUIEvent.ShowProgressIndicator(true))
+        assert(viewModel.uiState.isSearchInProgress)
     }
 }

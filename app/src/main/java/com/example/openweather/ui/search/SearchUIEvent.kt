@@ -6,4 +6,5 @@ sealed class SearchUIEvent {
     data class OnCountryCodeChange(val countryCode: String) : SearchUIEvent()
     object OnSearchClick : SearchUIEvent()
     data class OnLocationSearchClick(val lat: Double, val long: Double) : SearchUIEvent()
+    data class ShowProgressIndicator(val showProgressIndicator: Boolean) : SearchUIEvent()
 }

@@ -41,21 +41,22 @@ class SearchViewModel @Inject constructor(private val openWeatherApiService: Ope
                     if (uiState.stateCode.isNotEmpty()) query.append(",${uiState.stateCode}")
                     if (uiState.countryCode.isNotEmpty()) query.append(",${uiState.countryCode}")
 
-                    uiState = uiState.copy(isSearchInProgress = true)
+                    uiState = uiState.copy(isSearchInProgress = true, hasSearchError = false)
+
                     viewModelScope.launch {
                         try {
                             val response =
                                 openWeatherApiService.getWeatherByQuery(query.toString())
                             handleResponse(response)
                         } catch (e: Exception) {
-                            uiState = uiState.copy(isSearchInProgress = false)
+                            uiState = uiState.copy(isSearchInProgress = false, hasSearchError = true)
                         }
                     }
                 }
             }
 
             is SearchUIEvent.OnLocationSearchClick -> {
-                uiState = uiState.copy(isSearchInProgress = true)
+                uiState = uiState.copy(hasSearchError = false, formError = null)
 
                 viewModelScope.launch {
                     try {
@@ -65,15 +66,23 @@ class SearchViewModel @Inject constructor(private val openWeatherApiService: Ope
                         )
                         handleResponse(response)
                     } catch (e: Exception) {
-                        uiState = uiState.copy(isSearchInProgress = false)
+                        uiState = uiState.copy(isSearchInProgress = false, hasSearchError = true)
                     }
                 }
+            }
+
+            is SearchUIEvent.ShowProgressIndicator -> {
+                uiState = uiState.copy(isSearchInProgress = event.showProgressIndicator)
             }
         }
     }
 
     fun resetState() {
-        uiState = uiState.copy(apiResponse = null, navigateToNoResultsScreen = false)
+        uiState = uiState.copy(
+            apiResponse = null,
+            navigateToNoResultsScreen = false,
+            isSearchInProgress = false
+        )
     }
 
     private fun isFormValid(): Boolean {
@@ -96,9 +105,9 @@ class SearchViewModel @Inject constructor(private val openWeatherApiService: Ope
 
     private fun handleResponse(response: Response<OpenWeatherResponse>) {
         uiState = if (response.isSuccessful) {
-            uiState.copy(apiResponse = response.body(), isSearchInProgress = false)
+            uiState.copy(apiResponse = response.body())
         } else if (response.code() == 404) {
-            uiState.copy(navigateToNoResultsScreen = true, isSearchInProgress = false)
+            uiState.copy(navigateToNoResultsScreen = true)
         } else {
             uiState.copy(isSearchInProgress = false)
         }
