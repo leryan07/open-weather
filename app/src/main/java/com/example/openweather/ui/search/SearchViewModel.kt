@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.openweather.R
-import com.example.openweather.network.OpenWeatherApi
 import com.example.openweather.network.OpenWeatherApiService
 import com.example.openweather.network.model.OpenWeatherResponse
 import com.example.openweather.utils.UiText
