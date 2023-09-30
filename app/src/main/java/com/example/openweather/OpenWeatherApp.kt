@@ -34,6 +34,12 @@ fun OpenWeatherApp(
         .build()
     val jsonAdapter = moshi.adapter(OpenWeatherResponse::class.java).lenient()
 
+    val onNavigateToSearch = {
+        navController.navigate(Screen.Search.route) {
+            popUpTo(Screen.Search.route)
+        }
+    }
+
     Scaffold { innerPadding ->
         NavHost(
             navController = navController,
@@ -64,15 +70,15 @@ fun OpenWeatherApp(
 
                 ResultsScreen(
                     openWeatherResponse = openWeatherResponse,
+                    onNavigateToSearch = onNavigateToSearch,
                     modifier = Modifier.padding(top = 16.dp)
                 )
             }
             composable(route = Screen.NoResults.route) {
-                NoResultsScreen(onNavigateToSearch = {
-                    navController.navigate(Screen.Search.route) {
-                        popUpTo(Screen.Search.route)
-                    }
-                }, modifier = Modifier.padding(top = 16.dp))
+                NoResultsScreen(
+                    onNavigateToSearch = onNavigateToSearch,
+                    modifier = Modifier.padding(top = 16.dp)
+                )
             }
         }
     }

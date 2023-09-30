@@ -5,12 +5,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -18,7 +20,11 @@ import com.example.openweather.R
 import com.example.openweather.network.model.OpenWeatherResponse
 
 @Composable
-fun ResultsScreen(openWeatherResponse: OpenWeatherResponse?, modifier: Modifier = Modifier) {
+fun ResultsScreen(
+    openWeatherResponse: OpenWeatherResponse?,
+    onNavigateToSearch: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     val cityName = openWeatherResponse?.name ?: ""
     val temp = openWeatherResponse?.main?.temp ?: 0
@@ -47,5 +53,9 @@ fun ResultsScreen(openWeatherResponse: OpenWeatherResponse?, modifier: Modifier 
         Text(text = context.getString(R.string.high_low_temperature_placeholder, tempMax, tempMin))
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = context.getString(R.string.feels_like_temperature_placeholder, feelsLike))
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = { onNavigateToSearch() }) {
+            Text(text = stringResource(R.string.retry_search))
+        }
     }
 }
