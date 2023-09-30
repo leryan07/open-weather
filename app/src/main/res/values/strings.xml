@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">OpenWeather</string>
+    <string name="search">search</string>
+    <string name="city">City</string>
+    <string name="state_code">State Code</string>
+    <string name="country_code">Country Code</string>
+    <string name="search_button">Search Button</string>
+    <string name="results">results</string>
+    <string name="temperature_placeholder">%1$s&#xb0;</string>
+    <string name="feels_like_temperature_placeholder">Feels like %1$s&#xb0;</string>
+    <string name="high_low_temperature_placeholder">%1$s&#xb0;/%2$s&#xb0;</string>
+    <string name="current_location_button">Current location button</string>
+    <string name="required_fields_label">All fields marked with * are required</string>
+    <string name="city_is_required_error">City is required</string>
+    <string name="state_code_search_error">City, country code is required when searching by state code</string>
+    <string name="no_results_found">No results found</string>
+    <string name="retry_search">Retry Search</string>
+    <string name="no_results">noResults</string>
+</resources>
