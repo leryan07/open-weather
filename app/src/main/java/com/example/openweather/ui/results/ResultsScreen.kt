@@ -1,5 +1,6 @@
 package com.example.openweather.ui.results
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +38,11 @@ fun ResultsScreen(
     val icon = weather?.icon ?: ""
     val iconImageUrl = "https://openweathermap.org/img/wn/$icon@2x.png"
 
-    Column(modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
         Text(text = cityName, fontSize = 24.sp)
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = context.getString(R.string.temperature_placeholder, temp))

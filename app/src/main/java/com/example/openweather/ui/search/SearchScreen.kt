@@ -1,6 +1,7 @@
 package com.example.openweather.ui.search
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,10 +16,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.openweather.R
 import com.example.openweather.network.model.OpenWeatherResponse
+import com.example.openweather.network.model.Result
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -44,8 +51,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun SearchScreen(
-    onNavigateToResults: (openWeatherResponse: OpenWeatherResponse) -> Unit,
-    onNavigateToNoResults: () -> Unit,
+    onApiResponseSuccess: (openWeatherResponse: OpenWeatherResponse) -> Unit,
+    onApiResponseNone: () -> Unit,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
@@ -59,14 +67,30 @@ fun SearchScreen(
         android.Manifest.permission.ACCESS_FINE_LOCATION,
     )
 
-    uiState.apiResponse?.let {
-        onNavigateToResults(it)
-        viewModel.resetState()
+    uiState.apiResponse?.let { response ->
+        val currentOnApiResponseSuccess by rememberUpdatedState(onApiResponseSuccess)
+        DisposableEffect(uiState) {
+            when (response) {
+                is Result.Success -> {
+                    currentOnApiResponseSuccess(response.data)
+                }
+
+                is Result.None -> {
+                    onApiResponseNone()
+                }
+            }
+
+            onDispose {
+                viewModel.apiResponseHandled()
+            }
+        }
     }
 
-    if (uiState.navigateToNoResultsScreen) {
-        onNavigateToNoResults()
-        viewModel.resetState()
+    uiState.errorMessage?.let { errorMessage ->
+        LaunchedEffect(errorMessage) {
+            snackbarHostState.showSnackbar(errorMessage.asString(context))
+            viewModel.errorMessageShown()
+        }
     }
 
     Column(
@@ -74,46 +98,45 @@ fun SearchScreen(
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "OpenWeather", fontSize = 24.sp)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = stringResource(R.string.required_fields_label), color = Color.Red)
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = uiState.city,
-            onValueChange = { viewModel.onSearchUIEvent(SearchUIEvent.OnCityChange(it)) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(text = stringResource(R.string.city) + " *") },
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = uiState.stateCode,
-            onValueChange = { viewModel.onSearchUIEvent(SearchUIEvent.OnStateCodeChange(it)) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(text = stringResource(R.string.state_code)) },
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = uiState.countryCode,
-            onValueChange = { viewModel.onSearchUIEvent(SearchUIEvent.OnCountryCodeChange(it)) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(text = stringResource(R.string.country_code)) },
-            singleLine = true
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (uiState.hasSearchError) {
-            Text(text = stringResource(R.string.an_error_occurred_try_again))
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        if (uiState.isSearchInProgress) {
-            CircularProgressIndicator(
-                modifier = Modifier.width(64.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
-            )
+        if (uiState.isLoading) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.width(64.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
         } else {
+            Text(text = "OpenWeather", fontSize = 24.sp)
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = uiState.city,
+                onValueChange = { viewModel.onSearchUIEvent(SearchUIEvent.OnCityChange(it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(text = stringResource(R.string.city) + " *") },
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = uiState.stateCode,
+                onValueChange = { viewModel.onSearchUIEvent(SearchUIEvent.OnStateCodeChange(it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(text = stringResource(R.string.state_code)) },
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = uiState.countryCode,
+                onValueChange = { viewModel.onSearchUIEvent(SearchUIEvent.OnCountryCodeChange(it)) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(text = stringResource(R.string.country_code)) },
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
             Column {
                 Button(onClick = {
                     viewModel.onSearchUIEvent(SearchUIEvent.OnSearchClick)
@@ -126,25 +149,27 @@ fun SearchScreen(
                 Button(onClick = {
                     if (locationPermissionsState.status.isGranted) {
                         scope.launch(Dispatchers.IO) {
-                            viewModel.onSearchUIEvent(SearchUIEvent.ShowProgressIndicator(true))
+                            viewModel.onSearchUIEvent(SearchUIEvent.OnRetrieveLocationInitiated)
+
                             locationClient.getCurrentLocation(
                                 Priority.PRIORITY_HIGH_ACCURACY,
                                 CancellationTokenSource().token,
-                            ).addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    val lat = task.result.latitude
-                                    val long = task.result.longitude
+                            )
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+                                        val lat = task.result.latitude
+                                        val long = task.result.longitude
 
-                                    viewModel.onSearchUIEvent(
-                                        SearchUIEvent.OnLocationSearchClick(
-                                            lat,
-                                            long
+                                        viewModel.onSearchUIEvent(
+                                            SearchUIEvent.OnRetrieveLocationSuccess(
+                                                lat,
+                                                long
+                                            )
                                         )
-                                    )
-                                } else {
-                                    viewModel.onSearchUIEvent(SearchUIEvent.ShowProgressIndicator(false))
+                                    } else {
+                                        viewModel.onSearchUIEvent(SearchUIEvent.OnRetrieveLocationFailure)
+                                    }
                                 }
-                            }
                         }
                     } else {
                         scope.launch(Dispatchers.IO) {

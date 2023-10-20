@@ -3,7 +3,10 @@ package com.example.openweather
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -40,7 +43,9 @@ fun OpenWeatherApp(
         }
     }
 
-    Scaffold { innerPadding ->
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.Search.route,
@@ -48,7 +53,7 @@ fun OpenWeatherApp(
         ) {
             composable(route = Screen.Search.route) {
                 SearchScreen(
-                    onNavigateToResults = { openWeatherResponse ->
+                    onApiResponseSuccess = { openWeatherResponse ->
                         val openWeatherResponseJson = jsonAdapter.toJson(openWeatherResponse)
 
                         navController.navigate(
@@ -58,10 +63,11 @@ fun OpenWeatherApp(
                             )
                         )
                     },
-                    onNavigateToNoResults = {
+                    onApiResponseNone = {
                         navController.navigate(Screen.NoResults.route)
                     },
-                    modifier = Modifier.padding(top = 16.dp, start = 8.dp, end = 8.dp)
+                    snackbarHostState = snackbarHostState,
+                    modifier = Modifier.padding(top = 16.dp, start = 8.dp, end = 8.dp),
                 )
             }
             composable(route = Screen.Results.route) { backStackEntry ->

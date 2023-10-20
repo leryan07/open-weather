@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.openweather.R
 import com.example.openweather.network.OpenWeatherApiService
 import com.example.openweather.network.model.OpenWeatherResponse
+import com.example.openweather.network.model.Result
 import com.example.openweather.utils.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -37,52 +38,59 @@ class SearchViewModel @Inject constructor(private val openWeatherApiService: Ope
 
             is SearchUIEvent.OnSearchClick -> {
                 if (isFormValid()) {
-                    val query = StringBuilder(uiState.city)
-                    if (uiState.stateCode.isNotEmpty()) query.append(",${uiState.stateCode}")
-                    if (uiState.countryCode.isNotEmpty()) query.append(",${uiState.countryCode}")
-
-                    uiState = uiState.copy(isSearchInProgress = true, hasSearchError = false)
-
                     viewModelScope.launch {
                         try {
+                            val query = StringBuilder(uiState.city)
+                            if (uiState.stateCode.isNotEmpty()) query.append(",${uiState.stateCode}")
+                            if (uiState.countryCode.isNotEmpty()) query.append(",${uiState.countryCode}")
+
+                            uiState = uiState.copy(isLoading = true)
+
                             val response =
                                 openWeatherApiService.getWeatherByQuery(query.toString())
                             handleResponse(response)
                         } catch (e: Exception) {
-                            uiState = uiState.copy(isSearchInProgress = false, hasSearchError = true)
+                            uiState = uiState.copy(
+                                errorMessage = UiText.DynamicString("An error occurred. Try again."),
+                                isLoading = false
+                            )
                         }
                     }
                 }
             }
 
-            is SearchUIEvent.OnLocationSearchClick -> {
-                uiState = uiState.copy(hasSearchError = false, formError = null)
+            is SearchUIEvent.OnRetrieveLocationInitiated -> {
+                uiState = uiState.copy(isLoading = true)
+            }
 
+            is SearchUIEvent.OnRetrieveLocationSuccess -> {
                 viewModelScope.launch {
                     try {
+                        uiState = uiState.copy(isLoading = true)
                         val response = openWeatherApiService.getWeatherByCurrentLocation(
                             event.lat,
                             event.long
                         )
                         handleResponse(response)
                     } catch (e: Exception) {
-                        uiState = uiState.copy(isSearchInProgress = false, hasSearchError = true)
+                        uiState =
+                            uiState.copy(errorMessage = UiText.DynamicString("An error occurred. Try again."))
                     }
                 }
             }
 
-            is SearchUIEvent.ShowProgressIndicator -> {
-                uiState = uiState.copy(isSearchInProgress = event.showProgressIndicator)
+            is SearchUIEvent.OnRetrieveLocationFailure -> {
+                uiState = uiState.copy(isLoading = false)
             }
         }
     }
 
-    fun resetState() {
-        uiState = uiState.copy(
-            apiResponse = null,
-            navigateToNoResultsScreen = false,
-            isSearchInProgress = false
-        )
+    fun apiResponseHandled() {
+        uiState = uiState.copy(apiResponse = null, isLoading = false)
+    }
+
+    fun errorMessageShown() {
+        uiState = uiState.copy(errorMessage = null)
     }
 
     private fun isFormValid(): Boolean {
@@ -104,12 +112,12 @@ class SearchViewModel @Inject constructor(private val openWeatherApiService: Ope
     }
 
     private fun handleResponse(response: Response<OpenWeatherResponse>) {
-        uiState = if (response.isSuccessful) {
-            uiState.copy(apiResponse = response.body())
+        if (response.isSuccessful) {
+            response.body()?.let {
+                uiState = uiState.copy(apiResponse = Result.Success(it))
+            }
         } else if (response.code() == 404) {
-            uiState.copy(navigateToNoResultsScreen = true)
-        } else {
-            uiState.copy(isSearchInProgress = false)
+            uiState = uiState.copy(apiResponse = Result.None)
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.openweather.ui.search
 
 import com.example.openweather.network.FakeOpenWeatherApiService
+import com.example.openweather.network.model.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -55,20 +56,18 @@ class SearchViewModelTest {
         launch {
             viewModel.onSearchUIEvent(SearchUIEvent.OnSearchClick)
         }
-        assert(viewModel.uiState.navigateToNoResultsScreen)
+
+        assert(viewModel.uiState.apiResponse is Result.None)
     }
 
     @Test
     fun onSearchUIEvent_OnLocationSearchClick_200() = runTest(UnconfinedTestDispatcher()) {
         launch {
-            viewModel.onSearchUIEvent(SearchUIEvent.OnLocationSearchClick(0.0, 0.0))
+            viewModel.onSearchUIEvent(SearchUIEvent.OnRetrieveLocationSuccess(0.0, 0.0))
         }
-        assertEquals("Indianapolis", viewModel.uiState.apiResponse?.name)
-    }
 
-    @Test
-    fun onSearchUIEvent_ShowProgressIndicator_true() {
-        viewModel.onSearchUIEvent(SearchUIEvent.ShowProgressIndicator(true))
-        assert(viewModel.uiState.isSearchInProgress)
+        assert(viewModel.uiState.apiResponse is Result.Success)
+        val apiResponseSuccess = viewModel.uiState.apiResponse as Result.Success
+        assertEquals("Indianapolis", apiResponseSuccess.data.name)
     }
 }
